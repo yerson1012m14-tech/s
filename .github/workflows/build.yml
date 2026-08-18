@@ -12,10 +12,18 @@ jobs:
 
       - name: 🛠️ Instalar Theos y dependencias
         run: |
+          # 1. Instalar herramientas necesarias
           brew install ldid dpkg make
-          git clone --recursive https://github.com/theos/theos.git /opt/theos
-          echo "THEOS=/opt/theos" >> $GITHUB_ENV
-          echo "/opt/theos/bin" >> $GITHUB_PATH
+          
+          # 2. Añadir el 'make' moderno de Homebrew al PATH (soluciona el aviso de gmake)
+          echo "/opt/homebrew/opt/make/libexec/gnubin" >> $GITHUB_PATH
+          
+          # 3. Clonar Theos en la carpeta del usuario (evita el error de permisos de /opt)
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          
+          # 4. Configurar variables de entorno para que el sistema encuentre Theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin" >> $GITHUB_PATH
 
       - name: ⚙️ Compilar el proyecto
         run: |
@@ -25,11 +33,11 @@ jobs:
       - name: 🔍 Buscar y aislar el .dylib
         run: |
           # Theos guarda los compilados en la carpeta .theos/obj/
-          # Buscamos cualquier archivo .dylib generado y lo copiamos a una carpeta fácil de encontrar
           mkdir -p output
           find .theos/obj -name "*.dylib" -exec cp {} output/ \;
           
-          # Mostramos qué se encontró para verificar en los logs
+          # Mostrar qué se encontró para verificar en los logs de GitHub
+          echo "Archivos .dylib encontrados:"
           ls -la output/
 
       - name: 📤 Subir el .dylib a GitHub
