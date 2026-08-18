@@ -17,7 +17,7 @@ jobs:
           echo "--- SDKs de iOS disponibles ---"
           ls /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/
 
-      - name: 🛠️ Instalar Theos y dependencias
+      - name: ️ Instalar Theos y dependencias
         run: |
           brew install ldid dpkg make
           echo "/opt/homebrew/opt/make/libexec/gnubin" >> $GITHUB_PATH
@@ -28,14 +28,11 @@ jobs:
 
       - name: ⚙️ Configurar SDK y compilar
         run: |
-          # Detectar automáticamente el SDK de iOS más reciente disponible
           export SYSROOT=$(xcrun --sdk iphoneos --show-sdk-path)
           echo "Usando SDK: $SYSROOT"
           
-          # Apuntar a iOS 18.0 como mínimo (FilzaSlop soporta iOS 18+)
           export TARGET=iphone:clang:latest:18.0
           
-          # Compilar el tweak
           make clean
           make package FINALPACKAGE=1
 
@@ -47,7 +44,6 @@ jobs:
           echo "=== Archivos .dylib encontrados ==="
           ls -la output/
           
-          # También buscamos en la carpeta packages por si el .deb contiene el dylib
           echo "=== Contenido de packages/ ==="
           ls -la packages/ || true
 
