@@ -1,23 +1,23 @@
-name: Extraer Motor FilzaSlop (.dylib)
+name: "Extraer Motor FilzaSlop (.dylib)"
 on: [push, workflow_dispatch]
 
 jobs:
   build-dylib:
     runs-on: macos-latest
     steps:
-      - name: 📥 Clonar repositorio
+      - name: "Clonar repositorio"
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: 🔍 Diagnóstico: Mostrar Xcode y SDKs disponibles
+      - name: "Diagnostico - Mostrar Xcode y SDKs disponibles"
         run: |
           sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
           xcodebuild -version
           echo "--- SDKs de iOS disponibles ---"
           ls /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/
 
-      - name: ️ Instalar Theos y dependencias
+      - name: "Instalar Theos y dependencias"
         run: |
           brew install ldid dpkg make
           echo "/opt/homebrew/opt/make/libexec/gnubin" >> $GITHUB_PATH
@@ -26,7 +26,7 @@ jobs:
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
 
-      - name: ⚙️ Configurar SDK y compilar
+      - name: "Configurar SDK y compilar"
         run: |
           export SYSROOT=$(xcrun --sdk iphoneos --show-sdk-path)
           echo "Usando SDK: $SYSROOT"
@@ -36,7 +36,7 @@ jobs:
           make clean
           make package FINALPACKAGE=1
 
-      - name: 🔍 Buscar y aislar el .dylib
+      - name: "Buscar y aislar el .dylib"
         run: |
           mkdir -p output
           find .theos/obj -name "*.dylib" -exec cp {} output/ \;
@@ -47,10 +47,10 @@ jobs:
           echo "=== Contenido de packages/ ==="
           ls -la packages/ || true
 
-      - name: 📤 Subir el .dylib a GitHub
+      - name: "Subir el .dylib a GitHub"
         uses: actions/upload-artifact@v4
         with:
-          name: Motor-FilzaSlop-dylib
+          name: "Motor-FilzaSlop-dylib"
           path: |
             output/*.dylib
             packages/*.deb
