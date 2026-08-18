@@ -8,40 +8,53 @@ jobs:
       - name: 📥 Clonar repositorio
         uses: actions/checkout@v4
         with:
-          submodules: recursive # CRÍTICO: Necesario para XPF, kexploit, etc.
+          submodules: recursive
+
+      - name: 🔍 Diagnóstico: Mostrar Xcode y SDKs disponibles
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+          echo "--- SDKs de iOS disponibles ---"
+          ls /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/
 
       - name: 🛠️ Instalar Theos y dependencias
         run: |
-          # 1. Instalar herramientas necesarias
           brew install ldid dpkg make
-          
-          # 2. Añadir el 'make' moderno de Homebrew al PATH (soluciona el aviso de gmake)
           echo "/opt/homebrew/opt/make/libexec/gnubin" >> $GITHUB_PATH
           
-          # 3. Clonar Theos en la carpeta del usuario (evita el error de permisos de /opt)
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
-          
-          # 4. Configurar variables de entorno para que el sistema encuentre Theos
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
 
-      - name: ⚙️ Compilar el proyecto
+      - name: ⚙️ Configurar SDK y compilar
         run: |
+          # Detectar automáticamente el SDK de iOS más reciente disponible
+          export SYSROOT=$(xcrun --sdk iphoneos --show-sdk-path)
+          echo "Usando SDK: $SYSROOT"
+          
+          # Apuntar a iOS 18.0 como mínimo (FilzaSlop soporta iOS 18+)
+          export TARGET=iphone:clang:latest:18.0
+          
+          # Compilar el tweak
           make clean
           make package FINALPACKAGE=1
 
       - name: 🔍 Buscar y aislar el .dylib
         run: |
-          # Theos guarda los compilados en la carpeta .theos/obj/
           mkdir -p output
           find .theos/obj -name "*.dylib" -exec cp {} output/ \;
           
-          # Mostrar qué se encontró para verificar en los logs de GitHub
-          echo "Archivos .dylib encontrados:"
+          echo "=== Archivos .dylib encontrados ==="
           ls -la output/
+          
+          # También buscamos en la carpeta packages por si el .deb contiene el dylib
+          echo "=== Contenido de packages/ ==="
+          ls -la packages/ || true
 
       - name: 📤 Subir el .dylib a GitHub
         uses: actions/upload-artifact@v4
         with:
           name: Motor-FilzaSlop-dylib
-          path: output/*.dylib
+          path: |
+            output/*.dylib
+            packages/*.deb
