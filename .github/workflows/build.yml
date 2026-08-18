@@ -1,0 +1,39 @@
+name: Extraer Motor FilzaSlop (.dylib)
+on: [push, workflow_dispatch]
+
+jobs:
+  build-dylib:
+    runs-on: macos-latest
+    steps:
+      - name: 📥 Clonar repositorio
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # CRÍTICO: Necesario para XPF, kexploit, etc.
+
+      - name: 🛠️ Instalar Theos y dependencias
+        run: |
+          brew install ldid dpkg make
+          git clone --recursive https://github.com/theos/theos.git /opt/theos
+          echo "THEOS=/opt/theos" >> $GITHUB_ENV
+          echo "/opt/theos/bin" >> $GITHUB_PATH
+
+      - name: ⚙️ Compilar el proyecto
+        run: |
+          make clean
+          make package FINALPACKAGE=1
+
+      - name: 🔍 Buscar y aislar el .dylib
+        run: |
+          # Theos guarda los compilados en la carpeta .theos/obj/
+          # Buscamos cualquier archivo .dylib generado y lo copiamos a una carpeta fácil de encontrar
+          mkdir -p output
+          find .theos/obj -name "*.dylib" -exec cp {} output/ \;
+          
+          # Mostramos qué se encontró para verificar en los logs
+          ls -la output/
+
+      - name: 📤 Subir el .dylib a GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: Motor-FilzaSlop-dylib
+          path: output/*.dylib
